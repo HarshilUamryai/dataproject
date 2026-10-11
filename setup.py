@@ -2,7 +2,7 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-
+#it will read the requirements.txt file and return a list of requirements
 def get_requirements(file_path):
     file_path = Path(file_path)
     if not file_path.exists():
@@ -13,7 +13,8 @@ def get_requirements(file_path):
         requirements = file.readlines()
     return [req.strip() for req in requirements if req.strip() and not req.startswith('#')]
 
-
+#this steup function defines the package metadata and dependencies for the project. It specifies 
+# the package name, version, author information, packages to include, and the list of required dependencies read from the requirements.txt file.
 setup(
     name='datascience_project',
     version='0.1',
