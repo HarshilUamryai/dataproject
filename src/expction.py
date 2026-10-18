@@ -1,24 +1,31 @@
 import sys
-import logging as Logger
+from src.Logger import logging
 
 
-def handle_exception(exc_type, exc_value, exc_traceback):
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-    print("Uncaught exception", exc_type, exc_value)
+def handle_exception(error, error_details: sys):
+    _, _, tb = error_details.exc_info()
+    file_name = tb.tb_frame.f_code.co_filename
+    line_number = tb.tb_lineno
+    error_message = f"Error: {error} in file: {file_name} at line: {line_number}"
+    logging.error(error_message)
 
-sys.excepthook = handle_exception
 
 class CustomException(Exception):
-    """Custom exception class for specific error handling."""
-    pass
+    def __init__(self, error_message, error_details: sys):
+        super().__init__(error_message)
+        self.error_message = error_message
+        self.error_details = error_details
+
+    def __str__(self):
+        _, _, tb = self.error_details.exc_info()
+        file_name = tb.tb_frame.f_code.co_filename
+        line_number = tb.tb_lineno
+        return f"Error: {self.error_message} in file: {file_name} at line: {line_number}"
+
+
 if __name__ == "__main__":
-    Logger.info("Custom exception handling initialized.")
     try:
-        raise CustomException("This is a custom exception.")
-    except CustomException as e:
-        print(f"Caught a custom exception: {e}")
-
-
-            
+        x = 1 / 0
+    except Exception as e:
+        custom_exception = CustomException(str(e), sys)
+        print(custom_exception)
