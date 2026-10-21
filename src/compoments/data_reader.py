@@ -14,6 +14,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.expction import CustomException
 from src.Logger import logging
 
+from src.compoments.data_transformtion import data_transformation
+from src.compoments.data_transformtion import data_transformation_config
 
 @dataclass
 class DataIngestionConfig:
@@ -83,5 +85,6 @@ class DataIngestion:
 
 if __name__ == "__main__":
     obj = DataIngestion()
-    obj.initiate_data_ingestion()
-
+    train_path, test_path = obj.initiate_data_ingestion()
+    data_transformation = data_transformation()
+    data_transformation.initiate_data_transformation(train_path, test_path)
