@@ -1,90 +1,68 @@
-import glob
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from dataclasses import dataclass
 from src.expction import CustomException
 from src.Logger import logging
-
-from src.compoments.data_transformtion import data_transformation
-from src.compoments.data_transformtion import data_transformation_config
+from src.compoments.data_transformtion import DataTransformation
+from src.compoments.Model_trainer import ModelTrainer
 
 @dataclass
 class DataIngestionConfig:
-    train_data_path: str = os.path.join('artifacts', 'train.csv')
-    test_data_path: str = os.path.join('artifacts', 'test.csv')
-    raw_data_path: str = os.path.join('artifacts', 'data.csv')
-
+    train_data_path: str = str(PROJECT_ROOT / "artifacts" / "train.csv")
+    test_data_path: str = str(PROJECT_ROOT / "artifacts" / "test.csv")
+    raw_data_path: str = str(PROJECT_ROOT / "artifacts" / "data.csv")
 
 class DataIngestion:
     def __init__(self):
-        self.ingestion_config = DataIngestionConfig()
-
-    def _resolve_dataset_path(self):
-        candidates = [
-            PROJECT_ROOT / 'notebook' / 'students.csv',
-            PROJECT_ROOT / 'notebook' / 'Students.csv',
-            PROJECT_ROOT / 'notebook' / 'student.csv',
-            PROJECT_ROOT / 'notebook' / 'Student.csv',
-        ]
-
-        for candidate in candidates:
-            if candidate.exists():
-                return str(candidate)
-
-        matches = [
-            Path(path)
-            for path in glob.glob(str(PROJECT_ROOT / 'notebook' / '*.csv'), recursive=True)
-            + glob.glob(str(PROJECT_ROOT / '**' / '*.csv'), recursive=True)
-        ]
-
-        for candidate in matches:
-            if 'student' in candidate.name.lower():
-                return str(candidate)
-
-        if matches:
-            return str(matches[0])
-
-        raise FileNotFoundError(f"Dataset not found under project root: {PROJECT_ROOT}")
+        self.ingestion_config=DataIngestionConfig()
 
     def initiate_data_ingestion(self):
         logging.info("Entered the data ingestion method or component")
         try:
-            dataset_path = self._resolve_dataset_path()
-            df = pd.read_csv(dataset_path)
+            df = pd.read_csv(PROJECT_ROOT / "notbook" / "students.csv")
             logging.info('Read the dataset as dataframe')
 
-            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path) or '.', exist_ok=True)
+            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path),exist_ok=True)
 
-            df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
+            df.to_csv(self.ingestion_config.raw_data_path,index=False,header=True)
 
             logging.info("Train test split initiated")
-            train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
+            train_set,test_set=train_test_split(df,test_size=0.2,random_state=42)
 
-            train_set.to_csv(self.ingestion_config.train_data_path, index=False, header=True)
-            test_set.to_csv(self.ingestion_config.test_data_path, index=False, header=True)
+            train_set.to_csv(self.ingestion_config.train_data_path,index=False,header=True)
 
-            logging.info("Ingestion of the data is completed")
+            test_set.to_csv(self.ingestion_config.test_data_path,index=False,header=True)
 
-            return (
+            logging.info("Inmgestion of the data iss completed")
+
+            return(
                 self.ingestion_config.train_data_path,
                 self.ingestion_config.test_data_path
+
             )
-
         except Exception as e:
-            raise CustomException(e, sys)
+            raise CustomException(e,sys)
 
+if __name__=="__main__":
+    try:
+        obj=DataIngestion()
+        train_data,test_data=obj.initiate_data_ingestion()
 
-if __name__ == "__main__":
-    obj = DataIngestion()
-    train_path, test_path = obj.initiate_data_ingestion()
-    data_transformation = data_transformation()
-    data_transformation.initiate_data_transformation(train_path, test_path)
+        data_transformation=DataTransformation()
+        train_arr,test_arr,_=data_transformation.initiate_data_transformation(train_data,test_data)
+
+        modeltrainer=ModelTrainer()
+        test_score = modeltrainer.initiate_model_trainer(train_arr,test_arr)
+        print(f"Training completed. Test R2 score: {test_score:.4f}")
+    except Exception:
+        logging.exception("Training pipeline failed")
+        raise
