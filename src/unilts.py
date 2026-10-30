@@ -2,7 +2,7 @@ import sys
 import os
 import joblib
 from sklearn.metrics import r2_score
-
+from sklearn.model_selection import GridSearchCV
 from src.expction import CustomException
 
 
@@ -24,11 +24,21 @@ def load_object(file_path):
         raise CustomException(e, sys)
 
 
-def evaluate_models(X_train, y_train, X_test, y_test, models) -> dict[str, float]:
+def evaluate_models(
+    X_train, y_train, X_test, y_test, models, params
+) -> dict[str, float]:
     try:
         report = {}
         for model_name, model in models.items():
-            model.fit(X_train, y_train)
+            param_grid = params.get(model_name, {})
+            if param_grid:
+                search = GridSearchCV(model, param_grid, cv=3)
+                search.fit(X_train, y_train)
+                model = search.best_estimator_
+                models[model_name] = model
+            else:
+                model.fit(X_train, y_train)
+
             y_test_pred = model.predict(X_test)
             report[model_name] = float(r2_score(y_test, y_test_pred))
 
